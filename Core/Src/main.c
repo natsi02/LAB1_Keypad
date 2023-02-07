@@ -61,8 +61,11 @@ struct PortPin L[4] =
  {GPIOB,GPIO_PIN_6},
  {GPIOA,GPIO_PIN_7}
 };
-
 uint16_t ButtonMatrix = 0;
+int count = 0,check = 0,a = 0;
+enum {S1,S2,S3,S4,S5} States = S1;
+int current[4][4]={0},last[4][4]={0},numput[12] = {0};
+int complete[11] = {6,4,3,4,0,5,0,0,0,1,7};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +73,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 void ReadMatrixButton1Row();
+void Readnum();
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -119,12 +123,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-   static uint32_t timestamp = 0;
-   if(HAL_GetTick() >= timestamp)
-   {
-    timestamp = HAL_GetTick() + 100;
-    ReadMatrixButton1Row();
-   }
+	static uint32_t timestamp = 0;
+	if(HAL_GetTick() >= timestamp)
+	{
+		timestamp = HAL_GetTick() + 10;
+		ReadMatrixButton1Row();
+	   	Readnum();
+	}
   }
   /* USER CODE END 3 */
 }
@@ -162,8 +167,7 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -286,14 +290,17 @@ void ReadMatrixButton1Row()
  register int i;
  for (i = 0; i < 4; i++)
  {
-  if(HAL_GPIO_ReadPin(L[i].PORT, L[i].PIN) == 1)
+  current[X][i] = HAL_GPIO_ReadPin(L[i].PORT, L[i].PIN);
+  if((last[X][i] == 1) && (current[X][i] == 0))
   {
-   ButtonMatrix &= ~(1<<(X*4 + i));
+   ButtonMatrix |= 1<<(X*4+i);
+   count++;
   }
   else
   {
-   ButtonMatrix |= 1<<(X*4+i);
+   ButtonMatrix &= ~(1<<(X*4 + i));
   }
+  last[X][i] = current[X][i];
  }
  // SET RX
  HAL_GPIO_WritePin(R[X].PORT, R[X].PIN, 1);
@@ -301,6 +308,153 @@ void ReadMatrixButton1Row()
  HAL_GPIO_WritePin(R[(X+1)%4].PORT, R[(X+1)%4].PIN, 0);
  X++;
  X%=4;
+}
+
+void Readnum()
+{
+	switch(States)
+	{
+	case(S1):
+	default:
+		if(ButtonMatrix == 1 && count == 1)
+		{
+			numput[a] = 7;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 2 && count == 1)
+		{
+			numput [a] = 4;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 4 && count == 1)
+		{
+			numput [a] = 1;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 8 && count == 1)
+		{
+			numput [a] = 0;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 16 && count == 1)
+		{
+			numput [a] = 8;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 32 && count == 1)
+		{
+			numput [a] = 5;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 64 && count == 1)
+		{
+			numput [a] = 2;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 256 && count == 1)
+		{
+			numput [a] = 9;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 512 && count == 1)
+		{
+			numput [a] = 6;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 1024 && count == 1)
+		{
+			numput [a] = 3;
+			a++;
+			count--;
+		}
+		else if(ButtonMatrix == 4096 && count == 1) //clear
+		{
+			if(States == S5)
+			{
+				States = S2;
+				count--;
+			}
+			else
+			{
+				States = S2;
+				count--;
+			}
+		}
+		else if(ButtonMatrix == 8192 && count == 1) //Backspace
+		{
+			States = S3;
+			count--;
+		}
+		else if(ButtonMatrix == 32768 && count == 1) //OK
+		{
+			States = S4;
+			count--;
+		}
+		else if(a == 12)
+		{
+			for(int j=0;j<11;j++)
+			{
+				numput[j] = numput[j+1];
+			}
+			a--;
+		}
+	break;
+
+	case(S2):
+		for(int k=0;k<12;k++)
+		{
+			numput[k] = 0;
+		}
+		a = 0;
+		check = 0;
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 0);
+		States = S1;
+	break;
+
+	case(S3):
+		if(a == 0)
+		{
+			numput[a] = 0;
+			States = S1;
+		}
+		else
+		{
+			numput[a] = 0;
+			a = a - 1;
+			States = S1;
+		}
+	break;
+
+	case(S4):
+		for(int i=0;i<11;i++)
+		{
+			if(numput[i] == complete[i])
+			{
+				check++;
+			}
+		}
+		if(check == 11)
+		{
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 1);
+			check = 0;
+			States = S1;
+		}
+		else
+		{
+			check = 0;
+			States = S1;
+		}
+	break;
+	}
 }
 /* USER CODE END 4 */
 
