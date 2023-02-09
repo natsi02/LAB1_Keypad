@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+//NATCHANON SINGHA
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,7 +61,9 @@ struct PortPin L[4] =
  {GPIOB,GPIO_PIN_6},
  {GPIOA,GPIO_PIN_7}
 };
+//Button counter
 uint16_t ButtonMatrix = 0;
+
 int count = 0,check = 0,a = 0;
 enum {S1,S2,S3,S4,S5} States = S1;
 int current[4][4]={0},last[4][4]={0},numput[12] = {0};
@@ -123,8 +125,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	ReadMatrixButton1Row();
-	Readnum();
+	static uint32_t timestamp = 0;
+	if(HAL_GetTick() >= timestamp)
+	{
+		timestamp = HAL_GetTick() + 50;
+		ReadMatrixButton1Row();
+		Readnum();
+	}
   }
   /* USER CODE END 3 */
 }
