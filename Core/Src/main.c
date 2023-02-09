@@ -62,7 +62,7 @@ struct PortPin L[4] =
  {GPIOA,GPIO_PIN_7}
 };
 uint16_t ButtonMatrix = 0;
-int count = 0,check = 0,a = 0;
+int count = 0,check = 0;
 enum {S1,S2,S3,S4,S5} States = S1;
 int current[4][4]={0},last[4][4]={0},numput[12] = {0};
 int complete[11] = {6,4,3,4,0,5,0,0,0,1,7};
@@ -123,13 +123,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	static uint32_t timestamp = 0;
-	if(HAL_GetTick() >= timestamp)
-	{
-		timestamp = HAL_GetTick() + 10;
-		ReadMatrixButton1Row();
-	   	Readnum();
-	}
+	ReadMatrixButton1Row();
+	Readnum();
   }
   /* USER CODE END 3 */
 }
